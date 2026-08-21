@@ -15,7 +15,6 @@ import {
   ChannelType,
 } from 'discord.js';
 import dotenv from 'dotenv';
-import Parser from 'rss-parser';
 
 dotenv.config();
 
@@ -47,7 +46,27 @@ const CHECK_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
 
 // ─────────────────────────────────────────────────────────────
 
-const rssParser = new Parser();
+// Extracts title and link from the first <item> in a raw RSS feed without
+// using an XML parser — Royal Road's feed has malformed HTML in descriptions
+// that breaks every standards-compliant parser.
+function parseFirstRSSItem(xml) {
+  const itemMatch = xml.match(/<item[\s>][\s\S]*?<\/item>/);
+  if (!itemMatch) return null;
+  const item = itemMatch[0];
+
+  const titleMatch = item.match(/<title><!\[CDATA\[([\s\S]*?)\]\]><\/title>/) ||
+                     item.match(/<title>([\s\S]*?)<\/title>/);
+  const linkMatch  = item.match(/<link>([\s\S]*?)<\/link>/);
+  const guidMatch  = item.match(/<guid[^>]*>([\s\S]*?)<\/guid>/);
+
+  const link = linkMatch?.[1]?.trim() ?? guidMatch?.[1]?.trim();
+  if (!link) return null;
+
+  return {
+    title: titleMatch?.[1]?.trim() ?? 'New Chapter',
+    link,
+  };
+}
 
 // Tracks the latest chapter link per feed so we don't re-announce on restart.
 const lastSeenLink = {};
@@ -64,10 +83,7 @@ async function checkChapterDrops(guild) {
   for (const feed of RSS_FEEDS) {
     try {
       const raw = await fetch(feed.url).then((r) => r.text());
-      // Royal Road RSS sometimes has unescaped & in URLs — fix before parsing
-      const sanitized = raw.replace(/&(?!(?:[a-zA-Z]+|#\d+|#x[0-9a-fA-F]+);)/g, '&amp;');
-      const parsed = await rssParser.parseString(sanitized);
-      const latest = parsed.items[0];
+      const latest = parseFirstRSSItem(raw);
       if (!latest) continue;
 
       // On first check, just store the latest — don't announce old chapters.
