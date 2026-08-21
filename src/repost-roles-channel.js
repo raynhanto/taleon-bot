@@ -44,8 +44,11 @@ async function main() {
   }
   console.log(`🗑️  Cleared ${botMessages.size} old message(s)\n`);
 
-  // Post each category as its own message
-  for (const cat of CATEGORIES) {
+  // Post each category as its own message, with a spacer in between
+  for (let i = 0; i < CATEGORIES.length; i++) {
+    if (i > 0) await channel.send('ㅤ'); // invisible spacer breaks Discord's message grouping
+
+    const cat = CATEGORIES[i];
     const msg = await channel.send(cat.message);
     for (const emoji of cat.reactions) {
       await msg.react(emoji);
