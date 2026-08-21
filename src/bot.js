@@ -202,7 +202,7 @@ client.on('guildMemberAdd', async (member) => {
   );
   if (!channel) return;
   await channel.send(
-    `Welcome <@${member.id}>! Read #rules and grab your roles in #pick-your-platform. 👋`
+    `Welcome <@${member.id}>! Read #rules and grab your roles in #pick-your-roles. 👋`
   );
 });
 
