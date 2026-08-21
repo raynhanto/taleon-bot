@@ -76,10 +76,14 @@ async function checkChapterDrops(guild) {
 
       if (latest.link !== lastSeenLink[feed.url]) {
         lastSeenLink[feed.url] = latest.link;
-        await channel.send(
+        const msg = await channel.send(
           `${ping} 📖 **New chapter dropped!**\n**${feed.name}** — ${latest.title}\n${latest.link}`
         );
-        console.log(`✅ [${feed.name}] Announced: "${latest.title}"`);
+        await msg.startThread({
+          name: `💬 ${latest.title}`,
+          autoArchiveDuration: 10080, // 7 days
+        });
+        console.log(`✅ [${feed.name}] Announced + threaded: "${latest.title}"`);
       }
     } catch (err) {
       console.error(`❌ RSS check failed for ${feed.name}:`, err.message);
@@ -91,6 +95,7 @@ const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildMessages,
     GatewayIntentBits.GuildMessageReactions,
   ],
   // Partials are required to receive reactions on messages that
@@ -172,6 +177,22 @@ async function handleReaction(reaction, user, action) {
 
 client.on('messageReactionAdd', (reaction, user) => handleReaction(reaction, user, 'add'));
 client.on('messageReactionRemove', (reaction, user) => handleReaction(reaction, user, 'remove'));
+
+// Auto-thread any non-bot message posted manually in #chapter-drops
+client.on('messageCreate', async (message) => {
+  if (message.author.bot) return;
+  if (message.channel.name !== CHAPTER_DROP_CHANNEL) return;
+  if (message.hasThread) return;
+  try {
+    await message.startThread({
+      name: `💬 Discussion`,
+      autoArchiveDuration: 10080, // 7 days
+    });
+    console.log(`✅ Auto-threaded manual post in #${CHAPTER_DROP_CHANNEL} by ${message.author.tag}`);
+  } catch (err) {
+    console.error('❌ Failed to create thread:', err.message);
+  }
+});
 
 client.on('guildMemberAdd', async (member) => {
   const guild = member.guild;
