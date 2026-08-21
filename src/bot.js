@@ -15,6 +15,8 @@ import {
   ChannelType,
 } from 'discord.js';
 import dotenv from 'dotenv';
+import { initDb } from './db.js';
+import { handleXp } from './leveling.js';
 
 dotenv.config();
 
@@ -129,6 +131,8 @@ const roleMessageMap = {};
 
 client.once('ready', async () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
+  await initDb();
+  console.log('✅ Database ready');
 
   try {
     const guild = await client.guilds.fetch(process.env.DISCORD_GUILD_ID);
@@ -199,19 +203,26 @@ async function handleReaction(reaction, user, action) {
 client.on('messageReactionAdd', (reaction, user) => handleReaction(reaction, user, 'add'));
 client.on('messageReactionRemove', (reaction, user) => handleReaction(reaction, user, 'remove'));
 
-// Auto-thread any non-bot message posted manually in #chapter-drops
 client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
-  if (message.channel.name !== CHAPTER_DROP_CHANNEL) return;
-  if (message.hasThread) return;
+
+  // Auto-thread manual posts in #chapter-drops
+  if (message.channel.name === CHAPTER_DROP_CHANNEL && !message.hasThread) {
+    try {
+      await message.startThread({
+        name: `💬 Discussion`,
+        autoArchiveDuration: 10080,
+      });
+    } catch (err) {
+      console.error('❌ Failed to create thread:', err.message);
+    }
+  }
+
+  // Award XP for every message
   try {
-    await message.startThread({
-      name: `💬 Discussion`,
-      autoArchiveDuration: 10080, // 7 days
-    });
-    console.log(`✅ Auto-threaded manual post in #${CHAPTER_DROP_CHANNEL} by ${message.author.tag}`);
+    await handleXp(message);
   } catch (err) {
-    console.error('❌ Failed to create thread:', err.message);
+    console.error('❌ XP error:', err.message);
   }
 });
 
