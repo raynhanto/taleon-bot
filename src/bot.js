@@ -170,4 +170,16 @@ async function handleReaction(reaction, user, action) {
 client.on('messageReactionAdd', (reaction, user) => handleReaction(reaction, user, 'add'));
 client.on('messageReactionRemove', (reaction, user) => handleReaction(reaction, user, 'remove'));
 
+client.on('guildMemberAdd', async (member) => {
+  const guild = member.guild;
+  await guild.channels.fetch();
+  const channel = guild.channels.cache.find(
+    (c) => c.type === ChannelType.GuildText && c.name === 'welcome'
+  );
+  if (!channel) return;
+  await channel.send(
+    `Welcome <@${member.id}>! Read #rules and grab your roles in #pick-your-platform. 👋`
+  );
+});
+
 client.login(process.env.DISCORD_BOT_TOKEN);
