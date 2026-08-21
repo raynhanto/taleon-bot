@@ -37,7 +37,7 @@ const NOTIFY_ROLE = 'Notify: New Release';
 const RSS_FEEDS = [
   {
     name: 'Evil Clown Evolution',
-    url: 'https://www.royalroad.com/fiction/187602/rss.xml',
+    url: 'https://www.royalroad.com/syndication/187602',
   },
   // Add more novels here as they join the server:
   // { name: 'Novel Title', url: 'https://www.royalroad.com/fiction/XXXXX/rss.xml' },
@@ -82,7 +82,9 @@ async function checkChapterDrops(guild) {
 
   for (const feed of RSS_FEEDS) {
     try {
-      const raw = await fetch(feed.url).then((r) => r.text());
+      const raw = await fetch(feed.url, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; TaleonBot/1.0)' },
+      }).then((r) => r.text());
       const latest = parseFirstRSSItem(raw);
       if (!latest) continue;
 
