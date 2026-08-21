@@ -1,0 +1,14 @@
+{
+  "name": "evil-clown-discord-bot",
+  "version": "1.0.0",
+  "description": "One-time setup bot for the Evil Clown Evolution (Frost Taleon) Discord server — creates categories, channels, and roles.",
+  "type": "module",
+  "main": "src/setup.js",
+  "scripts": {
+    "setup": "node src/setup.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.16.3",
+    "dotenv": "^16.4.5"
+  }
+}
