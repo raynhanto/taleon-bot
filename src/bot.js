@@ -63,7 +63,10 @@ async function checkChapterDrops(guild) {
 
   for (const feed of RSS_FEEDS) {
     try {
-      const parsed = await rssParser.parseURL(feed.url);
+      const raw = await fetch(feed.url).then((r) => r.text());
+      // Royal Road RSS sometimes has unescaped & in URLs — fix before parsing
+      const sanitized = raw.replace(/&(?!(?:[a-zA-Z]+|#\d+|#x[0-9a-fA-F]+);)/g, '&amp;');
+      const parsed = await rssParser.parseString(sanitized);
       const latest = parsed.items[0];
       if (!latest) continue;
 
