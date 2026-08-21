@@ -112,28 +112,28 @@ client.once('ready', async () => {
   try {
     const guild = await client.guilds.fetch(process.env.DISCORD_GUILD_ID);
     await guild.channels.fetch();
+    await guild.roles.fetch();
 
-    const channel = guild.channels.cache.find(
+    // Set up reaction roles
+    const rolesChannel = guild.channels.cache.find(
       (c) => c.type === ChannelType.GuildText && c.name === PLATFORM_CHANNEL
     );
-    if (!channel) {
+    if (!rolesChannel) {
       console.warn(`⚠️  #${PLATFORM_CHANNEL} not found — reaction roles won't work`);
-      return;
+    } else {
+      const messages = await rolesChannel.messages.fetch({ limit: 20 });
+      const botMessages = messages.filter((m) => m.author.id === client.user.id);
+      if (botMessages.size === 0) {
+        console.warn(`⚠️  No bot messages found in #${PLATFORM_CHANNEL} — reaction roles won't work`);
+      } else {
+        for (const msg of botMessages.values()) {
+          roleMessageMap[msg.id] = REACTION_ROLES;
+        }
+        console.log(`✅ Loaded ${botMessages.size} role message(s) — reaction roles active`);
+      }
     }
 
-    const messages = await channel.messages.fetch({ limit: 20 });
-    const botMessages = messages.filter((m) => m.author.id === client.user.id);
-    if (botMessages.size === 0) {
-      console.warn(`⚠️  No bot messages found in #${PLATFORM_CHANNEL} — reaction roles won't work`);
-      return;
-    }
-
-    for (const msg of botMessages.values()) {
-      roleMessageMap[msg.id] = REACTION_ROLES;
-    }
-    console.log(`✅ Loaded ${botMessages.size} role message(s) — reaction roles active`);
-
-    // Start RSS polling
+    // Start RSS polling (independent of reaction roles)
     await checkChapterDrops(guild);
     setInterval(() => checkChapterDrops(guild), CHECK_INTERVAL_MS);
     console.log(`✅ Chapter drop polling active (every ${CHECK_INTERVAL_MS / 60000} min)`);
