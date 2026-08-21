@@ -21,7 +21,24 @@ export async function initDb() {
       joined_at  TIMESTAMPTZ DEFAULT NOW(),
       PRIMARY KEY (user_id, guild_id)
     );
+    CREATE TABLE IF NOT EXISTS bot_settings (
+      key   TEXT PRIMARY KEY,
+      value TEXT
+    );
   `);
+}
+
+export async function getSetting(key) {
+  const res = await pool.query('SELECT value FROM bot_settings WHERE key = $1', [key]);
+  return res.rows[0]?.value ?? null;
+}
+
+export async function setSetting(key, value) {
+  await pool.query(
+    `INSERT INTO bot_settings (key, value) VALUES ($1, $2)
+     ON CONFLICT (key) DO UPDATE SET value = $2`,
+    [key, String(value)]
+  );
 }
 
 export async function getUser(userId, guildId) {

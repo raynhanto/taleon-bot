@@ -17,6 +17,7 @@ import {
 import dotenv from 'dotenv';
 import { initDb } from './db.js';
 import { handleXp } from './leveling.js';
+import { startMilestonePolling } from './milestones.js';
 
 dotenv.config();
 
@@ -162,6 +163,9 @@ client.once('ready', async () => {
     await checkChapterDrops(guild);
     setInterval(() => checkChapterDrops(guild), CHECK_INTERVAL_MS);
     console.log(`✅ Chapter drop polling active (every ${CHECK_INTERVAL_MS / 60000} min)`);
+
+    // Start milestone polling
+    startMilestonePolling(guild);
   } catch (err) {
     console.error('❌ Error during startup:', err.message);
   }
