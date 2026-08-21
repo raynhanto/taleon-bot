@@ -26,10 +26,11 @@ dotenv.config();
 const REACTION_ROLES = {
   '📗': 'Royal Road Reader',
   '📘': 'Scribble Hub Reader',
+  '🃏': "Jester's Crew",
   '🔔': 'Notify: New Release',
 };
 
-const PLATFORM_CHANNEL = 'pick-your-platform';
+const PLATFORM_CHANNEL = 'pick-your-roles';
 
 // Chapter drop config
 const CHAPTER_DROP_CHANNEL = 'chapter-drops';
