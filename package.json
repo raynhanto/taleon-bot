@@ -5,6 +5,7 @@
   "type": "module",
   "main": "src/setup.js",
   "scripts": {
+    "start": "node src/bot.js",
     "setup": "node src/setup.js"
   },
   "dependencies": {
