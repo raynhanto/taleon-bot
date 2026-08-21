@@ -30,10 +30,10 @@ const REACTION_ROLES = {
   '🔔': 'Notify: New Release',
 };
 
-const PLATFORM_CHANNEL = 'pick-your-roles';
+const PLATFORM_CHANNEL = '🎭・pick-your-roles';
 
 // Chapter drop config
-const CHAPTER_DROP_CHANNEL = 'chapter-drops';
+const CHAPTER_DROP_CHANNEL = '📖・chapter-drops';
 const NOTIFY_ROLE = 'Notify: New Release';
 const RSS_FEEDS = [
   {
@@ -177,7 +177,7 @@ client.on('guildMemberAdd', async (member) => {
   const guild = member.guild;
   await guild.channels.fetch();
   const channel = guild.channels.cache.find(
-    (c) => c.type === ChannelType.GuildText && c.name === 'welcome'
+    (c) => c.type === ChannelType.GuildText && c.name === '👋・welcome'
   );
   if (!channel) return;
   await channel.send(
