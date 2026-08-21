@@ -98,8 +98,8 @@ const client = new Client({
   partials: [Partials.Message, Partials.Channel, Partials.Reaction],
 });
 
-// Cache the platform message ID on startup so we only act on that one message.
-let platformMessageId = null;
+// Maps messageId → { emoji: roleName } for all pick-your-roles messages.
+const roleMessageMap = {};
 
 client.once('ready', async () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
@@ -117,14 +117,16 @@ client.once('ready', async () => {
     }
 
     const messages = await channel.messages.fetch({ limit: 20 });
-    const botMessage = messages.find((m) => m.author.id === client.user.id);
-    if (!botMessage) {
-      console.warn(`⚠️  No bot message found in #${PLATFORM_CHANNEL} — reaction roles won't work`);
+    const botMessages = messages.filter((m) => m.author.id === client.user.id);
+    if (botMessages.size === 0) {
+      console.warn(`⚠️  No bot messages found in #${PLATFORM_CHANNEL} — reaction roles won't work`);
       return;
     }
 
-    platformMessageId = botMessage.id;
-    console.log(`✅ Platform message found (${platformMessageId}) — reaction roles active`);
+    for (const msg of botMessages.values()) {
+      roleMessageMap[msg.id] = REACTION_ROLES;
+    }
+    console.log(`✅ Loaded ${botMessages.size} role message(s) — reaction roles active`);
 
     // Start RSS polling
     await checkChapterDrops(guild);
@@ -137,7 +139,7 @@ client.once('ready', async () => {
 
 async function handleReaction(reaction, user, action) {
   if (user.bot) return;
-  if (!platformMessageId || reaction.message.id !== platformMessageId) return;
+  if (!roleMessageMap[reaction.message.id]) return;
 
   const roleName = REACTION_ROLES[reaction.emoji.name];
   if (!roleName) return;
