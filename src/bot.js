@@ -15,6 +15,7 @@ import {
   ChannelType,
 } from 'discord.js';
 import dotenv from 'dotenv';
+import Parser from 'rss-parser';
 
 dotenv.config();
 
@@ -30,7 +31,60 @@ const REACTION_ROLES = {
 
 const PLATFORM_CHANNEL = 'pick-your-platform';
 
+// Chapter drop config
+const CHAPTER_DROP_CHANNEL = 'chapter-drops';
+const NOTIFY_ROLE = 'Notify: New Release';
+const RSS_FEEDS = [
+  {
+    name: 'Evil Clown Evolution',
+    url: 'https://www.royalroad.com/fiction/187602/rss.xml',
+  },
+  // Add more novels here as they join the server:
+  // { name: 'Novel Title', url: 'https://www.royalroad.com/fiction/XXXXX/rss.xml' },
+];
+const CHECK_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
+
 // ─────────────────────────────────────────────────────────────
+
+const rssParser = new Parser();
+
+// Tracks the latest chapter link per feed so we don't re-announce on restart.
+const lastSeenLink = {};
+
+async function checkChapterDrops(guild) {
+  const channel = guild.channels.cache.find(
+    (c) => c.type === ChannelType.GuildText && c.name === CHAPTER_DROP_CHANNEL
+  );
+  if (!channel) return;
+
+  const notifyRole = guild.roles.cache.find((r) => r.name === NOTIFY_ROLE);
+  const ping = notifyRole ? `<@&${notifyRole.id}>` : '';
+
+  for (const feed of RSS_FEEDS) {
+    try {
+      const parsed = await rssParser.parseURL(feed.url);
+      const latest = parsed.items[0];
+      if (!latest) continue;
+
+      // On first check, just store the latest — don't announce old chapters.
+      if (!lastSeenLink[feed.url]) {
+        lastSeenLink[feed.url] = latest.link;
+        console.log(`📖 [${feed.name}] Baseline set: "${latest.title}"`);
+        continue;
+      }
+
+      if (latest.link !== lastSeenLink[feed.url]) {
+        lastSeenLink[feed.url] = latest.link;
+        await channel.send(
+          `${ping} 📖 **New chapter dropped!**\n**${feed.name}** — ${latest.title}\n${latest.link}`
+        );
+        console.log(`✅ [${feed.name}] Announced: "${latest.title}"`);
+      }
+    } catch (err) {
+      console.error(`❌ RSS check failed for ${feed.name}:`, err.message);
+    }
+  }
+}
 
 const client = new Client({
   intents: [
@@ -70,6 +124,11 @@ client.once('ready', async () => {
 
     platformMessageId = botMessage.id;
     console.log(`✅ Platform message found (${platformMessageId}) — reaction roles active`);
+
+    // Start RSS polling
+    await checkChapterDrops(guild);
+    setInterval(() => checkChapterDrops(guild), CHECK_INTERVAL_MS);
+    console.log(`✅ Chapter drop polling active (every ${CHECK_INTERVAL_MS / 60000} min)`);
   } catch (err) {
     console.error('❌ Error during startup:', err.message);
   }
